@@ -81,42 +81,18 @@ contract TokenRegistryTest is Test {
 
     function testListTokensPagination() public {
         // Add multiple tokens
-        vm.prank(nonCouncil);
-        tokenRegistry.addToken(
-            "Token 0",
-            "A sample token",
-            "https://example.com/logo.png",
-            "TK0",
-            address(uint160(10)),
-            18
-        );
+        for (uint256 i = 0; i < 5; i++) {
+            vm.prank(nonCouncil);
+            tokenRegistry.addToken(
+                string(abi.encodePacked("Token ", uintToStr(i))),
+                "A sample token",
+                "https://example.com/logo.png",
+                string(abi.encodePacked("TK", uintToStr(i))),
+                address(uint160(i + 10)),
+                18
+            );
+        }
 
-        tokenRegistry.addToken(
-            "Token 1",
-            "A sample token",
-            "https://example.com/logo.png",
-            "TK1",
-            address(uint160(11)),
-            18
-        );
-
-        tokenRegistry.addToken(
-            "Token 2",
-            "A sample token",
-            "https://example.com/logo.png",
-            "TK2",
-            address(uint160(12)),
-            18
-        );
-
-        tokenRegistry.addToken(
-            "Token 3",
-            "A sample token",
-            "https://example.com/logo.png",
-            "TK3",
-            address(uint160(13)),
-            18
-        );
         TokenRegistry.Token[] memory page1 = tokenRegistry.listTokens(0, 2);
         assertEq(page1.length, 2);
         assertEq(page1[0].name, "Token 0");
@@ -133,10 +109,10 @@ contract TokenRegistryTest is Test {
         for (uint256 i = 0; i < 3; i++) {
             vm.prank(nonCouncil);
             tokenRegistry.addToken(
-                string(abi.encodePacked("Token ", i)),
+                string(abi.encodePacked("Token ", uintToStr(i))),
                 "A sample token",
                 "https://example.com/logo.png",
-                string(abi.encodePacked("TK", i)),
+                string(abi.encodePacked("TK", uintToStr(i))),
                 address(uint160(i + 10)),
                 18
             );
@@ -144,5 +120,26 @@ contract TokenRegistryTest is Test {
 
         uint256 latestIndex = tokenRegistry.getLatestIndex();
         assertEq(latestIndex, 3);
+    }
+
+    function uintToStr(uint256 _i) internal pure returns (string memory) {
+        if (_i == 0) {
+            return "0";
+        }
+        uint256 j = _i;
+        uint256 length;
+        while (j != 0) {
+            length++;
+            j /= 10;
+        }
+        bytes memory bstr = new bytes(length);
+        uint256 k = length;
+        while (_i != 0) {
+            k = k - 1;
+            uint8 temp = (48 + uint8(_i - (_i / 10) * 10));
+            bstr[k] = bytes1(temp);
+            _i /= 10;
+        }
+        return string(bstr);
     }
 }

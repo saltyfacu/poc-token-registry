@@ -8,12 +8,14 @@ contract TokenRegistryTest is Test {
     TokenRegistry tokenRegistry;
     address council = address(1);
     address nonCouncil = address(2);
-    address tokentroller = address(5);
-    address tokenAddress = address(3);
+    address tokentroller = address(3);
+    address tokenAddress = address(4);
     uint256 autoApprovalTime = 1 weeks;
 
     function setUp() public {
+        vm.prank(council);
         tokenRegistry = new TokenRegistry(council, autoApprovalTime);
+        vm.prank(council);
         tokenRegistry.updateTokentroller(tokentroller);
     }
 
@@ -62,7 +64,7 @@ contract TokenRegistryTest is Test {
     }
 
     function testUpdateCouncil() public {
-        address newCouncil = address(4);
+        address newCouncil = address(5);
         vm.prank(council);
         tokenRegistry.updateCouncil(newCouncil);
         assertEq(tokenRegistry.council(), newCouncil);

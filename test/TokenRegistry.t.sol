@@ -8,15 +8,17 @@ contract TokenRegistryTest is Test {
     TokenRegistry tokenRegistry;
     address council = address(1);
     address nonCouncil = address(2);
+    address tokentroller = address(5);
     address tokenAddress = address(3);
     uint256 autoApprovalTime = 1 weeks;
 
     function setUp() public {
         tokenRegistry = new TokenRegistry(council, autoApprovalTime);
+        tokenRegistry.updateTokentroller(tokentroller);
     }
 
     function testAddToken() public {
-        vm.prank(nonCouncil);
+        vm.prank(tokentroller);
         tokenRegistry.addToken("Test Token", "A sample token", "https://example.com/logo.png", "TTK", tokenAddress, 18);
 
         (
@@ -37,7 +39,7 @@ contract TokenRegistryTest is Test {
     }
 
     function testApproveToken() public {
-        vm.prank(nonCouncil);
+        vm.prank(tokentroller);
         tokenRegistry.addToken("Test Token", "A sample token", "https://example.com/logo.png", "TTK", tokenAddress, 18);
 
         vm.prank(council);
@@ -48,7 +50,7 @@ contract TokenRegistryTest is Test {
     }
 
     function testRejectToken() public {
-        vm.prank(nonCouncil);
+        vm.prank(tokentroller);
         tokenRegistry.addToken("Test Token", "A sample token", "https://example.com/logo.png", "TTK", tokenAddress, 18);
 
         vm.prank(council);
@@ -67,12 +69,13 @@ contract TokenRegistryTest is Test {
     }
 
     function testAutoApproveToken() public {
-        vm.prank(nonCouncil);
+        vm.prank(tokentroller);
         tokenRegistry.addToken("Test Token", "A sample token", "https://example.com/logo.png", "TTK", tokenAddress, 18);
 
         // Fast-forward time beyond auto-approval time
         vm.warp(block.timestamp + autoApprovalTime + 1);
 
+        vm.prank(tokentroller);
         tokenRegistry.autoApproveTokens();
 
         (, , , , , bool isPending) = tokenRegistry.getToken(tokenAddress);
@@ -82,7 +85,7 @@ contract TokenRegistryTest is Test {
     function testListTokensPagination() public {
         // Add multiple tokens
         for (uint256 i = 0; i < 5; i++) {
-            vm.prank(nonCouncil);
+            vm.prank(tokentroller);
             tokenRegistry.addToken(
                 string(abi.encodePacked("Token ", uintToStr(i))),
                 "A sample token",
@@ -93,11 +96,13 @@ contract TokenRegistryTest is Test {
             );
         }
 
+        vm.prank(tokentroller);
         TokenRegistry.Token[] memory page1 = tokenRegistry.listTokens(0, 2);
         assertEq(page1.length, 2);
         assertEq(page1[0].name, "Token 0");
         assertEq(page1[1].name, "Token 1");
 
+        vm.prank(tokentroller);
         TokenRegistry.Token[] memory page2 = tokenRegistry.listTokens(1, 2);
         assertEq(page2.length, 2);
         assertEq(page2[0].name, "Token 2");
@@ -107,7 +112,7 @@ contract TokenRegistryTest is Test {
     function testGetLatestIndex() public {
         // Add multiple tokens
         for (uint256 i = 0; i < 3; i++) {
-            vm.prank(nonCouncil);
+            vm.prank(tokentroller);
             tokenRegistry.addToken(
                 string(abi.encodePacked("Token ", uintToStr(i))),
                 "A sample token",
@@ -118,6 +123,7 @@ contract TokenRegistryTest is Test {
             );
         }
 
+        vm.prank(tokentroller);
         uint256 latestIndex = tokenRegistry.getLatestIndex();
         assertEq(latestIndex, 3);
     }

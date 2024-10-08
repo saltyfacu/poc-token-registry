@@ -25,6 +25,7 @@ contract TokenRegistry {
 
     // Address of the council (admin) who can approve or reject tokens
     address public council;
+    address public tokentroller;
 
     // Auto-approval time in seconds (configurable)
     uint256 public autoApprovalTime;
@@ -40,8 +41,9 @@ contract TokenRegistry {
     event TokenApproved(address indexed contractAddress);
     event TokenRejected(address indexed contractAddress);
 
-    // Event to be emitted when the council address is updated
+    // Event to be emitted when the council or tokentroller address is updated
     event CouncilUpdated(address indexed oldCouncil, address indexed newCouncil);
+    event TokentrollerUpdated(address indexed oldTokentroller, address indexed newTokentroller);
 
     /**
      * @dev Modifier to check if the token exists in the registry.
@@ -57,6 +59,14 @@ contract TokenRegistry {
      */
     modifier onlyCouncil() {
         require(msg.sender == council, "Caller is not the council");
+        _;
+    }
+
+    /**
+     * @dev Modifier to check if the caller is the tokentroller.
+     */
+    modifier onlyTokentroller() {
+        require(msg.sender == tokentroller, "Caller is not the tokentroller");
         _;
     }
 
@@ -81,6 +91,16 @@ contract TokenRegistry {
     }
 
     /**
+     * @dev Function to update the tokentroller address.
+     * @param _newTokentroller The address of the new tokentroller.
+     */
+    function updateTokentroller(address _newTokentroller) public onlyCouncil {
+        require(_newTokentroller != address(0), "New tokentroller address cannot be zero");
+        emit TokentrollerUpdated(tokentroller, _newTokentroller);
+        tokentroller = _newTokentroller;
+    }
+
+    /**
      * @dev Function to submit a new token to the registry.
      * @param _name The name of the token.
      * @param _description The description of the token.
@@ -96,7 +116,7 @@ contract TokenRegistry {
         string memory _symbol,
         address _contractAddress,
         uint8 _decimals
-    ) public {
+    ) public onlyTokentroller {
         require(bytes(tokens[_contractAddress].name).length == 0, "Token already exists");
 
         Token memory newToken = Token({
@@ -177,7 +197,7 @@ contract TokenRegistry {
     /**
      * @dev Function to auto-approve tokens if they are pending for longer than the auto-approval time.
      */
-    function autoApproveTokens() public {
+    function autoApproveTokens() public onlyTokentroller {
         for (uint256 i = 0; i < tokenAddresses.length; i++) {
             Token storage token = tokens[tokenAddresses[i]];
             if (token.isPending && (block.timestamp >= token.submissionTime + autoApprovalTime)) {
@@ -196,6 +216,7 @@ contract TokenRegistry {
     function listTokens(uint256 _page, uint256 _pageSize)
         public
         view
+        onlyTokentroller
         returns (Token[] memory)
     {
         require(_pageSize > 0, "Page size must be greater than zero");
@@ -217,7 +238,7 @@ contract TokenRegistry {
      * @dev Function to get the latest index for pagination.
      * @return The latest index of the token list.
      */
-    function getLatestIndex() public view returns (uint256) {
+    function getLatestIndex() public view onlyTokentroller returns (uint256) {
         return tokenAddresses.length;
     }
 }
